@@ -1,0 +1,33 @@
+body {
+    margin: auto;
+    padding-top: 10%;
+}
+
+#present {
+    font-size: 2em;
+    color:  #2e86c1;
+    font-weight: bold;
+}
+
+#score {
+    font-size: 1em;
+    color:  #2e86c1;
+}
+
+.default {
+    background-color: white !important;
+    color: black;
+    font-weight: normal;
+}
+
+.correct {
+    background-color:  #abebc6 !important;
+    color: black;
+    font-weight: normal;
+}
+
+.incorrect {
+    background-color: #f5b7b1 !important;
+    color: red;
+    font-weight: bold;
+}
