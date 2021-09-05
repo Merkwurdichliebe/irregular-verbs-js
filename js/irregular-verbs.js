@@ -145,9 +145,7 @@ function pause() {
 
 function gameOver() {
     let msg = '<p>Your score is ' + score + '. '
-    if (score == maxQuestions * 2) {
-        msg += 'Well done! '
-    }
+    msg += getScoreEvaluation(score) + ' ' 
     msg += 'Press Start to play again.'
     document.getElementById('message').innerHTML = msg
     let button = document.getElementById('button')
@@ -166,6 +164,23 @@ function resetInputForm() {
         item.disabled = false
     })
     user_input[0].focus()
+}
+
+function getScoreEvaluation(score) {
+    let maxScore = maxQuestions * 2
+    if (score == maxScore) {
+        return 'Perfect score! Well done indeed.'
+    } else if (score > maxScore * 0.8) {
+        return 'That was pretty good!'
+    } else if (score > maxScore * 0.6) {
+        return 'You can do better that this.'
+    } else if (score > maxScore * 0.4) {
+        return 'Well, that was pretty bad.'
+    } else if (score > maxScore * 0.2) {
+        return 'Pretty awful.'
+    } else {
+        return 'Quite the disaster, really.'
+    }
 }
 
 function error() {
