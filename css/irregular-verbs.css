@@ -34,6 +34,7 @@ input[type=text] {
 
 input#button {
     color: white;
+    width: 25%;
 }
 
 #present {
