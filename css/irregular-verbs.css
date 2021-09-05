@@ -1,9 +1,13 @@
+/* Desktop/mobile stuff */
+
 @media all and (min-width: 960px) {
     body {
         width: 50%;
         max-width: 700px;
     }
 }
+
+/* General*/
 
 body {
     background-color: #2d4069;
@@ -15,6 +19,8 @@ body {
 h2 {
     color:  yellow;
 }
+
+/* Input fields and displays */
 
 #inputs {
     display: flex;
@@ -45,6 +51,8 @@ input#button {
     color: #05ca57;
 }
 
+/* Correct/Incorrect answers */
+
 .default {
     background-color: white !important;
     color: black;
@@ -62,6 +70,8 @@ input#button {
     color: black;
     font-weight: bold;
 }
+
+/* Progress bar */
 
 #progress {
     display: grid;
