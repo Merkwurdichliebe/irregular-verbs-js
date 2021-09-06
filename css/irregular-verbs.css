@@ -28,7 +28,7 @@ h2 {
 
 input[type=text] {
     min-width: 2em;
-    margin-right: 3px;
+    margin-right: 2%;
     flex-grow: 1;
 }
 
@@ -85,6 +85,7 @@ input#button {
 .progress-item {
     background-color: white;
     color: black;
+    border-radius: 4px;
 }
 
 .hidden {
