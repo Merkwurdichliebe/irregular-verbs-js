@@ -1,7 +1,7 @@
 'use strict'
 
 // Globals
-const maxQuestions = 10
+const maxQuestions = 2
 let verbs
 let score = 0
 let questionCount = 0
@@ -236,8 +236,6 @@ function gameOver() {
     // Update UI
     document.getElementById('present').innerHTML = ''
     setButtonHighlight(true)
-    resetInputForm()
-    disableInputFields(true)
     document.activeElement.blur()  // Hide mobile keyboard
     setUIState('start')
 }
