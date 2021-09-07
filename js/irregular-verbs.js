@@ -1,7 +1,7 @@
 'use strict'
 
 // Globals
-const maxQuestions = 2
+const maxQuestions = 10
 let verbs
 let score = 0
 let questionCount = 0
