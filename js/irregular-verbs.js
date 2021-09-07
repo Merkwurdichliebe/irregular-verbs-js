@@ -49,6 +49,7 @@ function newGame() {
 // Display the next random verb
 function nextVerb() {
     updateScore()
+    document.getElementById('step-info').innerHTML = ''
     currentVerb = verbs.splice(Math.floor(Math.random() * verbs.length), 1)[0]
     currentRun.push(currentVerb)
     let present = currentVerb[0]
