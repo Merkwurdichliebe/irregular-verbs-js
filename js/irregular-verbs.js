@@ -7,6 +7,7 @@ let score = 0
 let questionCount = 0
 let currentVerb
 let currentRun
+let state = 'next'
 
 // Read JSON file from server
 function getData(url) {
@@ -49,7 +50,7 @@ function newGame() {
 // Display the next random verb
 function nextVerb() {
     updateScore()
-    document.getElementById('step-info').innerHTML = ''
+    clearProgressInfo()
     currentVerb = verbs.splice(Math.floor(Math.random() * verbs.length), 1)[0]
     currentRun.push(currentVerb)
     let present = currentVerb[0]
@@ -77,7 +78,7 @@ function initProgressBar() {
         div.appendChild(el)
         el.innerHTML = ''
     }
-    document.getElementById('step-info').innerHTML = ''
+    clearProgressInfo()
 }
 
 function getUserInputFields() {
@@ -89,6 +90,7 @@ function getUserInputFields() {
 
 // Check for correct answer
 function check() {
+    clearProgressInfo()
     let currentAnswerScore = 0
     let user_input = getUserInputFields()
 
@@ -156,32 +158,37 @@ function eventShowProgressStep(e) {
     let step = getProgressStepIndex(e.target)
 
     if (e.target.classList.contains('selected')) {
-        // Clear the step selection
-        document.getElementById('step-info').innerHTML = ''
-        e.target.classList.remove('selected')
-    } else {
-        // Remove 'selected' class on other buttons and add it to current one
-        let steps = document.querySelectorAll('.progress-item')
-        steps.forEach(function(step) {
-            step.classList.remove('selected')
-        })
-        document.querySelector('#progress-item-' + String(step)).classList.add('selected')
-
-        let isCorrect = e.target.classList.contains('correct')
-    
-        // Build the message to be displayed depending on user answer
-        let verb = currentRun[step]
-        let answer = `${verb[0]} : ${verb[1]}, ${verb[2]}`
-        let html
-    
-        if (isCorrect) {
-            html = '<span>' + answer + '</span>' + ' — You got that right!'
-        } else {
-            html = 'Remember, it\'s — ' + '<span>' + answer + '</span>'
-        }
-    
-        document.getElementById('step-info').innerHTML = html
+        clearProgressInfo()
+        return
     }
+
+    clearProgressInfo()
+
+    document.querySelector('#progress-item-' + String(step)).classList.add('selected')
+
+    let isCorrect = e.target.classList.contains('correct')
+
+    // Build the message to be displayed depending on user answer
+    let verb = currentRun[step]
+    let answer = `${verb[0]} : ${verb[1]}, ${verb[2]}`
+    let html
+
+    if (isCorrect) {
+        html = '<span>' + answer + '</span>' + ' — You got that right!'
+    } else {
+        html = 'Remember, it\'s — ' + '<span>' + answer + '</span>'
+    }
+
+    document.getElementById('step-info').innerHTML = html
+}
+
+
+function clearProgressInfo() {
+    document.getElementById('step-info').innerHTML = ''
+    let steps = document.querySelectorAll('.progress-item')
+    steps.forEach(function(step) {
+        step.classList.remove('selected')
+    })
 }
 
 // Get step index from the 'progress-item-xx' id attribute string
