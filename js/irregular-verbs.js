@@ -1,11 +1,12 @@
 'use strict'
 
 // Globals
+const maxQuestions = 10
+let verbs
 let score = 0
 let questionCount = 0
-let maxQuestions = 10
-let verbs
 let currentVerb
+let currentRun
 
 // Read JSON file from server
 function getData(url) {
@@ -40,6 +41,7 @@ function newGame() {
     document.getElementById('message').innerHTML = ''
     score = 0
     questionCount = 0
+    currentRun = []
     initProgressBar()
     nextVerb()
 }
@@ -48,6 +50,7 @@ function newGame() {
 function nextVerb() {
     updateScore()
     currentVerb = verbs.splice(Math.floor(Math.random() * verbs.length), 1)[0]
+    currentRun.push(currentVerb)
     let present = currentVerb[0]
     document.getElementById('present').innerHTML = present
     resetInputForm()
@@ -59,6 +62,7 @@ function nextVerb() {
     document.getElementById('button').addEventListener('click', check)
 }
 
+// Initialize the Progress Bar buttons
 function initProgressBar() {
     let div = document.getElementById('progress')
     div.innerHTML = ''
@@ -72,6 +76,7 @@ function initProgressBar() {
         div.appendChild(el)
         el.innerHTML = ''
     }
+    document.getElementById('step-info').innerHTML = ''
 }
 
 function getUserInputFields() {
@@ -83,6 +88,7 @@ function getUserInputFields() {
 
 // Check for correct answer
 function check() {
+    let currentAnswerScore = 0
     let user_input = getUserInputFields()
 
     // Move the focus to the second field if Enter was pressed
@@ -99,23 +105,32 @@ function check() {
     let correctAnswer = [currentVerb[1].split('/'), currentVerb[2].split('/')]
 
     // Unhide progress bar item
-    let grid_id = 'progress-item-' + String(questionCount - 1)
-    document.getElementById(grid_id).classList.remove('hidden')
+    let gridID = 'progress-item-' + String(questionCount - 1)
+    let progressElement = document.getElementById(gridID)
+    progressElement.classList.remove('hidden')
+    progressElement.addEventListener('click', eventShowProgressStep)
 
     // Check both answers
     for (let i = 0; i < 2; i++) {
         user_input[i].classList.remove('default')
         if (correctAnswer[i].includes(user_input[i].value.toLowerCase())) {
-            score += 1
+            currentAnswerScore += 1
             user_input[i].classList.add('correct')
-            document.getElementById(grid_id).classList.add('correct')
         } else {
             user_input[i].classList.add('incorrect')
-            document.getElementById(grid_id).classList.add('incorrect')
         }
         user_input[i].value = correctAnswer[i]
     }
 
+    if (currentAnswerScore === 2) {
+        document.getElementById(gridID).classList.add('correct')
+    } else if (currentAnswerScore == 1) {
+        document.getElementById(gridID).classList.add('half-correct')
+    } else {
+        document.getElementById(gridID).classList.add('incorrect')
+    }
+
+    score += currentAnswerScore
     updateScore()
 
     // Disable the input fields
@@ -134,6 +149,43 @@ function check() {
 
 function updateScore() {
     document.getElementById('score').innerHTML = score
+}
+
+function eventShowProgressStep(e) {
+    let step = getProgressStepIndex(e.target)
+
+    if (e.target.classList.contains('selected')) {
+        // Clear the step selection
+        document.getElementById('step-info').innerHTML = ''
+        e.target.classList.remove('selected')
+    } else {
+        // Remove 'selected' class on other buttons and add it to current one
+        let steps = document.querySelectorAll('.progress-item')
+        steps.forEach(function(step) {
+            step.classList.remove('selected')
+        })
+        document.querySelector('#progress-item-' + String(step)).classList.add('selected')
+
+        let isCorrect = e.target.classList.contains('correct')
+    
+        // Build the message to be displayed depending on user answer
+        let verb = currentRun[step]
+        let answer = `${verb[0]} : ${verb[1]}, ${verb[2]}`
+        let html
+    
+        if (isCorrect) {
+            html = '<span>' + answer + '</span>' + ' — You got that right!'
+        } else {
+            html = 'Remember, it\'s — ' + '<span>' + answer + '</span>'
+        }
+    
+        document.getElementById('step-info').innerHTML = html
+    }
+}
+
+// Get step index from the 'progress-item-xx' id attribute string
+function getProgressStepIndex(target) {
+    return Number(target.id.substr(14))
 }
 
 function pause() {
