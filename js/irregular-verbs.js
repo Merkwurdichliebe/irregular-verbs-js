@@ -232,10 +232,13 @@ function gameOver() {
     msg += getScoreEvaluation(score) + ' ' 
     msg += 'Press Start to play again.'
     document.getElementById('message').innerHTML = msg
+
+    // Update UI
     document.getElementById('present').innerHTML = ''
     setButtonHighlight(true)
     resetInputForm()
     disableInputFields(true)
+    document.activeElement.blur()  // Hide mobile keyboard
     setUIState('start')
 }
 
