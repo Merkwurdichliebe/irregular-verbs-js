@@ -7,7 +7,7 @@ let score = 0
 let questionCount = 0
 let currentVerb
 let currentRun
-let state = 'next'
+let uiState
 
 // Read JSON file from server
 function getData(url) {
@@ -25,43 +25,62 @@ async function main() {
     // Globally assign the Enter key to the button click event
     window.addEventListener('keyup', function(event) {
         if (event.key === 'Enter') {
-            // Cancel the default action, if needed
             event.preventDefault()
-            // Trigger the button element with a click
-            document.getElementById('button').click()
+            onClick()
         }
     })
 
-    // Start a new game
+    document.getElementById('button').addEventListener('click', onClick)
     newGame()
 }
 
-// Initialize game data and document
+// Handle button click based on UI state
+function onClick() {
+    switch(uiState) {
+        case 'start':
+            newGame()
+            break;
+        case 'check':
+            checkVerb()
+            break;
+        case 'next':
+            nextVerb()
+            break;
+        default:
+            throw 'Undefined game state.'
+    }
+}
+
+// Update the UI state and the button text
+function setUIState(state) {
+    uiState = state
+    document.getElementById('button').value = uiState
+}
+
+// Initialize game data
 function newGame() {
-    document.getElementById('button').removeEventListener('click', newGame)
     document.getElementById('message').innerHTML = ''
     score = 0
     questionCount = 0
     currentRun = []
     initProgressBar()
+    setButtonHighlight(false)
     nextVerb()
 }
 
 // Display the next random verb
 function nextVerb() {
-    updateScore()
-    clearProgressInfo()
     currentVerb = verbs.splice(Math.floor(Math.random() * verbs.length), 1)[0]
     currentRun.push(currentVerb)
     let present = currentVerb[0]
     document.getElementById('present').innerHTML = present
-    resetInputForm()
     questionCount += 1
 
-    // Switch the button from "next" to "check"
-    document.getElementById('button').removeEventListener('click', nextVerb)
-    document.getElementById('button').value = 'Check'
-    document.getElementById('button').addEventListener('click', check)
+    // Update the UI
+    updateScore()
+    clearStepInfo()
+    resetInputForm()
+    setUIState('check')
 }
 
 // Initialize the Progress Bar buttons
@@ -78,7 +97,7 @@ function initProgressBar() {
         div.appendChild(el)
         el.innerHTML = ''
     }
-    clearProgressInfo()
+    clearStepInfo()
 }
 
 function getUserInputFields() {
@@ -88,30 +107,37 @@ function getUserInputFields() {
     ]
 }
 
+function bothInputsFieldsFilled(fields) {
+    let result = true
+    fields.forEach(function(field, i, array) {
+        if (field.value.length == 0) { 
+            result = false
+        } else if (array[1-i].value.length == 0) {
+            array[1-i].focus()
+            result = false
+        }
+    })
+    return result
+}
+
 // Check for correct answer
-function check() {
-    clearProgressInfo()
+function checkVerb() {
+    clearStepInfo()
     let currentAnswerScore = 0
     let user_input = getUserInputFields()
 
-    // Move the focus to the second field if Enter was pressed
-    if (user_input[0].value.length !== 0 && document.activeElement == user_input[0]) {
-        user_input[1].focus()
-        return
-    }
+    // Only perform check if none of the fields are empty
+    if (!bothInputsFieldsFilled(user_input)) { return }
 
-    // Don't perform the check if any of the two fields is empty
-    if (user_input[0].value.length == 0 || user_input[1].value.length == 0 ) return
-
-    // Convert the answer string to an array if there are two possible options
-    // separated by a slash
+    // Convert the answer string to an array
+    // if there are two possible options separated by a slash
     let correctAnswer = [currentVerb[1].split('/'), currentVerb[2].split('/')]
 
-    // Unhide progress bar item
+    // Unhide corresponding progress bar step
     let gridID = 'progress-item-' + String(questionCount - 1)
-    let progressElement = document.getElementById(gridID)
-    progressElement.classList.remove('hidden')
-    progressElement.addEventListener('click', eventShowProgressStep)
+    let progressStep = document.getElementById(gridID)
+    progressStep.classList.remove('hidden')
+    progressStep.addEventListener('click', onDisplayStepInfo)
 
     // Check both answers
     for (let i = 0; i < 2; i++) {
@@ -135,42 +161,45 @@ function check() {
 
     score += currentAnswerScore
     updateScore()
-
-    // Disable the input fields
-    document.getElementById('preterit').disabled = true
-    document.getElementById('participle').disabled = true
+    disableInputFields(true)
 
     // Needed for Firefox for the Enter key to work
     document.getElementById('button').focus()
 
     if (questionCount < maxQuestions) {
-        pause()
+        setUIState('next')
     } else {
         gameOver()
     }
+}
+
+function disableInputFields(value) {
+    document.getElementById('preterit').disabled = value
+    document.getElementById('participle').disabled = value
 }
 
 function updateScore() {
     document.getElementById('score').innerHTML = score
 }
 
-function eventShowProgressStep(e) {
+// Show Step Info
+function onDisplayStepInfo(e) {
     let step = getProgressStepIndex(e.target)
 
+    // Deselect step if it's selected
     if (e.target.classList.contains('selected')) {
-        clearProgressInfo()
+        clearStepInfo()
         return
     }
 
-    clearProgressInfo()
-
+    // Select the step
+    clearStepInfo()
     document.querySelector('#progress-item-' + String(step)).classList.add('selected')
-
-    let isCorrect = e.target.classList.contains('correct')
 
     // Build the message to be displayed depending on user answer
     let verb = currentRun[step]
     let answer = `${verb[0]} : ${verb[1]}, ${verb[2]}`
+    let isCorrect = e.target.classList.contains('correct')
     let html
 
     if (isCorrect) {
@@ -182,8 +211,8 @@ function eventShowProgressStep(e) {
     document.getElementById('step-info').innerHTML = html
 }
 
-
-function clearProgressInfo() {
+// Clear Step Info
+function clearStepInfo() {
     document.getElementById('step-info').innerHTML = ''
     let steps = document.querySelectorAll('.progress-item')
     steps.forEach(function(step) {
@@ -196,22 +225,27 @@ function getProgressStepIndex(target) {
     return Number(target.id.substr(14))
 }
 
-function pause() {
-    let button = document.getElementById('button')
-    button.removeEventListener('click', check)
-    button.value = 'Next'
-    button.addEventListener('click', nextVerb)
-}
-
+// Display end of round information
 function gameOver() {
-    let msg = '<p>Your score is ' + score + '. '
+    let msg = '<p>Your score is ' + score
+    msg += ' out of a possible ' + maxQuestions * 2 + '. '
     msg += getScoreEvaluation(score) + ' ' 
     msg += 'Press Start to play again.'
     document.getElementById('message').innerHTML = msg
+    document.getElementById('present').innerHTML = ''
+    setButtonHighlight(true)
+    resetInputForm()
+    disableInputFields(true)
+    setUIState('start')
+}
+
+function setButtonHighlight(value) {
     let button = document.getElementById('button')
-    button.removeEventListener('click', nextVerb)
-    button.value = 'Start'
-    button.addEventListener('click', newGame)
+    if (value) {
+        button.classList.add('highlight')
+    } else {
+        button.classList.remove('highlight')
+    }
 }
 
 function resetInputForm() {

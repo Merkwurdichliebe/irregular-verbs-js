@@ -24,6 +24,7 @@ h2 {
 
 #inputs {
     display: flex;
+    margin-top: 0.5em;
 }
 
 input[type=text] {
@@ -36,6 +37,11 @@ input#button {
     color: white;
     width: 30%;
 }
+
+.highlight {
+    background-color: #05ca57 !important;
+}
+
 
 #present {
     font-size: 2em;
