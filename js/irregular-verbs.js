@@ -31,6 +31,7 @@ async function main() {
     })
 
     document.getElementById('button').addEventListener('click', onClick)
+    document.getElementById('progress').addEventListener('click', onDisplayStepInfo)
     newGame()
 }
 
@@ -137,7 +138,6 @@ function checkVerb() {
     let gridID = 'progress-item-' + String(questionCount - 1)
     let progressStep = document.getElementById(gridID)
     progressStep.classList.remove('hidden')
-    progressStep.addEventListener('click', onDisplayStepInfo)
 
     // Check both answers
     for (let i = 0; i < 2; i++) {
@@ -184,6 +184,9 @@ function updateScore() {
 
 // Show Step Info
 function onDisplayStepInfo(e) {
+    // ignore clicks on parent div
+    if (!e.target.classList.contains('progress-item')) { return }
+
     let step = getProgressStepIndex(e.target)
 
     // Deselect step if it's selected
