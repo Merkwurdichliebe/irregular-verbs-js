@@ -1,104 +1,112 @@
 'use strict'
 
-// Globals
 const maxQuestions = 10
-let verbs
 let score = 0
 let questionCount = 0
+let verbs
 let currentVerb
 let currentRun
 let uiState
 
-// Read JSON file from server
-function getData(url) {
+function getJSONData(url) {
     return fetch(url).then(response => {
       	return response.json()
     })
 }
 
-// Main entry point
 async function main() {
-    // Get verbs list
-    verbs = await getData('js/verbs-list.json')
+    verbs = await getJSONData('js/verbs-list.json')
     console.log('Loaded ' + verbs.length + ' verbs.')
 
     // Globally assign the Enter key to the button click event
     window.addEventListener('keyup', function(event) {
         if (event.key === 'Enter') {
             event.preventDefault()
-            onClick()
+            onButtonClick()
         }
     })
 
-    document.getElementById('button').addEventListener('click', onClick)
-    document.getElementById('progress').addEventListener('click', onDisplayStepInfo)
-    newGame()
+    document.getElementById('button').addEventListener('click', onButtonClick)
+    document.getElementById('progress-bar').addEventListener('click', onStepSelected)
+    startNewGame()
 }
 
-// Handle button click based on UI state
-function onClick() {
+function onButtonClick() {
     switch(uiState) {
         case 'start':
-            newGame()
+            startNewGame()
             break;
         case 'check':
-            checkVerb()
+            checkUserAnswer()
             break;
         case 'next':
-            nextVerb()
+            showNextVerb()
             break;
         default:
             throw 'Undefined game state.'
     }
 }
 
-// Update the UI state and the button text
 function setUIState(state) {
     uiState = state
     document.getElementById('button').value = uiState
 }
 
-// Initialize game data
-function newGame() {
+function startNewGame() {
     document.getElementById('message').innerHTML = ''
     score = 0
     questionCount = 0
     currentRun = []
     initProgressBar()
     setButtonHighlight(false)
-    nextVerb()
+    showNextVerb()
 }
 
-// Display the next random verb
-function nextVerb() {
+function showNextVerb() {
     currentVerb = verbs.splice(Math.floor(Math.random() * verbs.length), 1)[0]
     currentRun.push(currentVerb)
-    let present = currentVerb[0]
-    document.getElementById('present').innerHTML = present
+    let presentForm = currentVerb[0]
+    document.getElementById('present').innerHTML = presentForm
     questionCount += 1
 
-    // Update the UI
-    updateScore()
-    clearStepInfo()
+    updateScoreDisplay()
+    clearStepInfoDisplay()
     resetInputForm()
     setUIState('check')
 }
 
-// Initialize the Progress Bar buttons
 function initProgressBar() {
-    let div = document.getElementById('progress')
+    let div = document.getElementById('progress-bar')
     div.innerHTML = ''
     for (let i=0; i < maxQuestions; i++) {
         let el = document.createElement('div')
-        let id = 'progress-item-' + String(i)
+        let id = 'step-' + String(i)
         el.setAttribute('id', id)
-        el.setAttribute('class', 'progress-item')
+        el.setAttribute('class', 'step')
         el.setAttribute('style', 'grid-column: ' + String(i+1))
         el.classList.add('hidden')
         div.appendChild(el)
         el.innerHTML = ''
     }
-    clearStepInfo()
+    clearStepInfoDisplay()
+}
+
+function checkUserAnswer() {
+    clearStepInfoDisplay()
+    let userInput = getUserInputFields()
+    if (!areBothInputFieldsFilled(userInput)) return
+    
+    let answerScore = getAnswerScore(userInput)
+    showStepInfoButton(answerScore)
+    score += answerScore
+    updateScoreDisplay()
+    disableInputFields(true)
+
+    if (questionCount < maxQuestions) {
+        setUIState('next')
+    } else {
+        gameOver()
+    }
 }
 
 function getUserInputFields() {
@@ -108,7 +116,7 @@ function getUserInputFields() {
     ]
 }
 
-function bothInputsFieldsFilled(fields) {
+function areBothInputFieldsFilled(fields) {
     let result = true
     fields.forEach(function(field, i, array) {
         if (field.value.length == 0) { 
@@ -121,126 +129,115 @@ function bothInputsFieldsFilled(fields) {
     return result
 }
 
-// Check for correct answer
-function checkVerb() {
-    clearStepInfo()
-    let currentAnswerScore = 0
-    let user_input = getUserInputFields()
-
-    // Only perform check if none of the fields are empty
-    if (!bothInputsFieldsFilled(user_input)) { return }
-
-    // Convert the answer string to an array
-    // if there are two possible options separated by a slash
+function getAnswerScore(userInput) {
+    let answerScore = 0
     let correctAnswer = [currentVerb[1].split('/'), currentVerb[2].split('/')]
 
-    // Unhide corresponding progress bar step
-    let gridID = 'progress-item-' + String(questionCount - 1)
-    let progressStep = document.getElementById(gridID)
-    progressStep.classList.remove('hidden')
-
-    // Check both answers
     for (let i = 0; i < 2; i++) {
-        user_input[i].classList.remove('default')
-        if (correctAnswer[i].includes(user_input[i].value.toLowerCase())) {
-            currentAnswerScore += 1
-            user_input[i].classList.add('correct')
+        userInput[i].classList.remove('default')
+        if (correctAnswer[i].includes(userInput[i].value.trim().toLowerCase())) {
+            answerScore += 1
+            userInput[i].classList.add('correct')
         } else {
-            user_input[i].classList.add('incorrect')
+            userInput[i].classList.add('incorrect')
         }
-        user_input[i].value = correctAnswer[i]
+        userInput[i].value = correctAnswer[i]
     }
 
-    if (currentAnswerScore === 2) {
+    return answerScore
+}
+
+function showStepInfoButton(answerScore) {
+    let gridID = 'step-' + String(questionCount - 1)
+    document.getElementById(gridID).classList.remove('hidden')
+
+    if (answerScore === 2) {
         document.getElementById(gridID).classList.add('correct')
-    } else if (currentAnswerScore == 1) {
+    } else if (answerScore == 1) {
         document.getElementById(gridID).classList.add('half-correct')
     } else {
         document.getElementById(gridID).classList.add('incorrect')
-    }
-
-    score += currentAnswerScore
-    updateScore()
-    disableInputFields(true)
-
-    // Needed for Firefox for the Enter key to work
-    document.getElementById('button').focus()
-
-    if (questionCount < maxQuestions) {
-        setUIState('next')
-    } else {
-        gameOver()
     }
 }
 
 function disableInputFields(value) {
     document.getElementById('preterit').disabled = value
     document.getElementById('participle').disabled = value
+    document.getElementById('button').focus() // Firefox needs this for Enter key
 }
 
-function updateScore() {
+function updateScoreDisplay() {
     document.getElementById('score').innerHTML = score
 }
 
-// Show Step Info
-function onDisplayStepInfo(e) {
-    // ignore clicks on parent div
-    if (!e.target.classList.contains('progress-item')) { return }
-
-    let step = getProgressStepIndex(e.target)
-
-    // Deselect step if it's selected
-    if (e.target.classList.contains('selected')) {
-        clearStepInfo()
+function onStepSelected(e) {
+    if (isNotDelegatingButton(e.target)) {
         return
-    }
-
-    // Select the step
-    clearStepInfo()
-    document.querySelector('#progress-item-' + String(step)).classList.add('selected')
-
-    // Build the message to be displayed depending on user answer
-    let verb = currentRun[step]
-    let answer = `${verb[0]} : ${verb[1]}, ${verb[2]}`
-    let isCorrect = e.target.classList.contains('correct')
-    let html
-
-    if (isCorrect) {
-        html = '<span>' + answer + '</span>' + ' — You got that right!'
+    } else if (isStepButtonSelected(e.target)) {
+        clearStepInfoDisplay()
+        return
     } else {
-        html = 'Remember, it\'s — ' + '<span>' + answer + '</span>'
+        showStepInfoText(e.target)
     }
+}
 
+function isStepButtonSelected(button) {
+    return button.classList.contains('selected')
+}
+
+function isNotDelegatingButton(button) {
+    return !button.classList.contains('step')
+}
+
+function showStepInfoText(button) {
+    let step = getStepIndex(button)
+    clearStepInfoDisplay()
+    document.querySelector('#step-' + String(step)).classList.add('selected')
+
+    let verb = currentRun[step]
+    let correctAnswer = `${verb[0]} : ${verb[1]}, ${verb[2]}`
+    let isUserCorrect = button.classList.contains('correct')
+
+    let html = getStepInfoHTML(correctAnswer, isUserCorrect)
     document.getElementById('step-info').innerHTML = html
 }
 
-// Clear Step Info
-function clearStepInfo() {
+function getStepInfoHTML(correctAnswer, isUserCorrect) {
+    if (isUserCorrect) {
+        return '<span>' + correctAnswer + '</span>' + ' — You got that right!'
+    } else {
+        return 'Remember, it\'s — ' + '<span>' + correctAnswer + '</span>'
+    }
+}
+
+function clearStepInfoDisplay() {
     document.getElementById('step-info').innerHTML = ''
-    let steps = document.querySelectorAll('.progress-item')
+    let steps = document.querySelectorAll('.step')
     steps.forEach(function(step) {
         step.classList.remove('selected')
     })
 }
 
-// Get step index from the 'progress-item-xx' id attribute string
-function getProgressStepIndex(target) {
-    return Number(target.id.substr(14))
+function getStepIndex(target) {
+    // We get the progress bar step index
+    // from the 'step-xx' id attribute string
+    return Number(target.id.substr(5))
 }
 
-// Display end of round information
 function gameOver() {
-    let msg = '<p>Your score is ' + score
-    msg += ' out of a possible ' + maxQuestions * 2 + '. '
-    msg += getScoreEvaluation(score) + ' ' 
-    msg += 'Press Start to play again.'
-    document.getElementById('message').innerHTML = msg
-
-    // Update UI
+    showGameOverMessage()
     document.getElementById('present').innerHTML = ''
     setButtonHighlight(true)
     document.activeElement.blur()  // Hide mobile keyboard
     setUIState('start')
+}
+
+function showGameOverMessage() {
+    let msg = '<p>Your score is ' + score
+    msg += ' out of a possible ' + maxQuestions * 2 + '. '
+    msg += getScoreEvaluation(score) + '<br>' 
+    msg += 'Press Start to play again.'
+    document.getElementById('message').innerHTML = msg
 }
 
 function setButtonHighlight(value) {
@@ -275,14 +272,10 @@ function getScoreEvaluation(score) {
     } else if (score > maxScore * 0.4) {
         return 'Well, that was pretty bad.'
     } else if (score > maxScore * 0.2) {
-        return 'Pretty awful.'
+        return 'Rather awful.'
     } else {
         return 'Quite the disaster, really.'
     }
-}
-
-function error() {
-    console.log('Error loading JSON file.')
 }
 
 main()
