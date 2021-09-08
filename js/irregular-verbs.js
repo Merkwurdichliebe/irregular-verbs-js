@@ -214,9 +214,9 @@ function showStepInfoText(button) {
 
 function getStepInfoHTML(correctAnswer, isUserCorrect) {
     if (isUserCorrect) {
-        return '<span>' + correctAnswer + '</span>' + ' — You got that right!'
+        return `<span>${correctAnswer}</span> — You got that right!`
     } else {
-        return 'Remember, it\'s — ' + '<span>' + correctAnswer + '</span>'
+        return `Remember, it's — <span>${correctAnswer}</span>`
     }
 }
 
