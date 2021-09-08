@@ -1,12 +1,20 @@
 'use strict'
 
-const maxQuestions = 10
-let score = 0
-let questionCount = 0
-let verbs
-let currentVerb
-let currentRun
-let uiState
+const maxQuestions = 3
+let score = 0,
+    questionCount = 0,
+    verbs,
+    currentVerb,
+    currentRun,
+    uiState
+
+const mainButton = document.getElementById('button'),
+    progressBar = document.getElementById('progress-bar'),
+    messageBox = document.getElementById('message'),
+    stepInfo = document.getElementById('step-info'),
+    inputPreterit = document.getElementById('preterit'),
+    inputParticiple = document.getElementById('participle'),
+    inputFields = [inputPreterit, inputParticiple]
 
 function getJSONData(url) {
     return fetch(url).then(response => {
@@ -26,8 +34,8 @@ async function main() {
         }
     })
 
-    document.getElementById('button').addEventListener('click', onButtonClick)
-    document.getElementById('progress-bar').addEventListener('click', onStepSelected)
+    mainButton.addEventListener('click', onButtonClick)
+    progressBar.addEventListener('click', onStepSelected)
     startNewGame()
 }
 
@@ -49,11 +57,11 @@ function onButtonClick() {
 
 function setUIState(state) {
     uiState = state
-    document.getElementById('button').value = uiState
+    mainButton.value = uiState
 }
 
 function startNewGame() {
-    document.getElementById('message').innerHTML = ''
+    messageBox.innerHTML = ''
     score = 0
     questionCount = 0
     currentRun = []
@@ -63,10 +71,9 @@ function startNewGame() {
 }
 
 function showNextVerb() {
-    currentVerb = verbs.splice(Math.floor(Math.random() * verbs.length), 1)[0]
+    currentVerb = getRandomVerb()
     currentRun.push(currentVerb)
-    let presentForm = currentVerb[0]
-    document.getElementById('present').innerHTML = presentForm
+    document.getElementById('present').innerHTML = currentVerb[0]
     questionCount += 1
 
     updateScoreDisplay()
@@ -75,9 +82,12 @@ function showNextVerb() {
     setUIState('check')
 }
 
+function getRandomVerb() {
+    return verbs.splice(Math.floor(Math.random() * verbs.length), 1)[0]
+}
+
 function initProgressBar() {
-    let div = document.getElementById('progress-bar')
-    div.innerHTML = ''
+    removeAllChildElements(progressBar)
     for (let i=0; i < maxQuestions; i++) {
         let el = document.createElement('div')
         let id = 'step-' + String(i)
@@ -85,18 +95,23 @@ function initProgressBar() {
         el.setAttribute('class', 'step')
         el.setAttribute('style', 'grid-column: ' + String(i+1))
         el.classList.add('hidden')
-        div.appendChild(el)
+        progressBar.appendChild(el)
         el.innerHTML = ''
     }
     clearStepInfoDisplay()
 }
 
+function removeAllChildElements(el) {
+    while (el.firstChild) {
+        el.removeChild(el.lastChild)
+    }
+ }
+
 function checkUserAnswer() {
     clearStepInfoDisplay()
-    let userInput = getUserInputFields()
-    if (!areBothInputFieldsFilled(userInput)) return
+    if (!areBothInputFieldsFilled()) return
     
-    let answerScore = getAnswerScore(userInput)
+    let answerScore = getAnswerScore()
     showStepInfoButton(answerScore)
     score += answerScore
     updateScoreDisplay()
@@ -109,16 +124,9 @@ function checkUserAnswer() {
     }
 }
 
-function getUserInputFields() {
-    return [
-        document.getElementById('preterit'),
-        document.getElementById('participle')
-    ]
-}
-
-function areBothInputFieldsFilled(fields) {
+function areBothInputFieldsFilled() {
     let result = true
-    fields.forEach(function(field, i, array) {
+    inputFields.forEach(function(field, i, array) {
         if (field.value.length == 0) { 
             result = false
         } else if (array[1-i].value.length == 0) {
@@ -129,41 +137,41 @@ function areBothInputFieldsFilled(fields) {
     return result
 }
 
-function getAnswerScore(userInput) {
+function getAnswerScore() {
     let answerScore = 0
     let correctAnswer = [currentVerb[1].split('/'), currentVerb[2].split('/')]
 
     for (let i = 0; i < 2; i++) {
-        userInput[i].classList.remove('default')
-        if (correctAnswer[i].includes(userInput[i].value.trim().toLowerCase())) {
+        inputFields[i].classList.remove('default')
+        if (correctAnswer[i].includes(inputFields[i].value.trim().toLowerCase())) {
             answerScore += 1
-            userInput[i].classList.add('correct')
+            inputFields[i].classList.add('correct')
         } else {
-            userInput[i].classList.add('incorrect')
+            inputFields[i].classList.add('incorrect')
         }
-        userInput[i].value = correctAnswer[i]
+        inputFields[i].value = correctAnswer[i]
     }
 
     return answerScore
 }
 
 function showStepInfoButton(answerScore) {
-    let gridID = 'step-' + String(questionCount - 1)
-    document.getElementById(gridID).classList.remove('hidden')
+    let stepButton = document.getElementById('step-' + String(questionCount - 1))
+    stepButton.classList.remove('hidden')
 
     if (answerScore === 2) {
-        document.getElementById(gridID).classList.add('correct')
+        stepButton.classList.add('correct')
     } else if (answerScore == 1) {
-        document.getElementById(gridID).classList.add('half-correct')
+        stepButton.classList.add('half-correct')
     } else {
-        document.getElementById(gridID).classList.add('incorrect')
+        stepButton.classList.add('incorrect')
     }
 }
 
 function disableInputFields(value) {
-    document.getElementById('preterit').disabled = value
-    document.getElementById('participle').disabled = value
-    document.getElementById('button').focus() // Firefox needs this for Enter key
+    inputPreterit.disabled = value
+    inputParticiple.disabled = value
+    mainButton.focus() // Firefox needs this for Enter key
 }
 
 function updateScoreDisplay() {
@@ -198,8 +206,7 @@ function showStepInfoText(button) {
     let correctAnswer = `${verb[0]} : ${verb[1]}, ${verb[2]}`
     let isUserCorrect = button.classList.contains('correct')
 
-    let html = getStepInfoHTML(correctAnswer, isUserCorrect)
-    document.getElementById('step-info').innerHTML = html
+    stepInfo.innerHTML = getStepInfoHTML(correctAnswer, isUserCorrect)
 }
 
 function getStepInfoHTML(correctAnswer, isUserCorrect) {
@@ -211,7 +218,7 @@ function getStepInfoHTML(correctAnswer, isUserCorrect) {
 }
 
 function clearStepInfoDisplay() {
-    document.getElementById('step-info').innerHTML = ''
+    stepInfo.innerHTML = ''
     let steps = document.querySelectorAll('.step')
     steps.forEach(function(step) {
         step.classList.remove('selected')
@@ -241,24 +248,22 @@ function showGameOverMessage() {
 }
 
 function setButtonHighlight(value) {
-    let button = document.getElementById('button')
     if (value) {
-        button.classList.add('highlight')
+        mainButton.classList.add('highlight')
     } else {
-        button.classList.remove('highlight')
+        mainButton.classList.remove('highlight')
     }
 }
 
 function resetInputForm() {
-    let user_input = getUserInputFields()
-    user_input.forEach(item => {
+    inputFields.forEach(item => {
         item.classList.remove('correct')
         item.classList.remove('incorrect')
         item.classList.add('default')
         item.value = ''
         item.disabled = false
     })
-    user_input[0].focus()
+    inputPreterit.focus()
 }
 
 function getScoreEvaluation(score) {
