@@ -1,6 +1,6 @@
 'use strict'
 
-const maxQuestions = 3
+const maxQuestions = 10
 let score = 0,
     questionCount = 0,
     verbs,
@@ -61,10 +61,10 @@ function setUIState(state) {
 }
 
 function startNewGame() {
-    messageBox.innerHTML = ''
     score = 0
     questionCount = 0
     currentRun = []
+    removeAllChildElements(messageBox)
     initProgressBar()
     setButtonHighlight(false)
     showNextVerb()
@@ -73,7 +73,7 @@ function startNewGame() {
 function showNextVerb() {
     currentVerb = getRandomVerb()
     currentRun.push(currentVerb)
-    document.getElementById('present').innerHTML = currentVerb[0]
+    document.getElementById('present').textContent = currentVerb[0]
     questionCount += 1
 
     updateScoreDisplay()
@@ -96,7 +96,7 @@ function initProgressBar() {
         el.setAttribute('style', 'grid-column: ' + String(i+1))
         el.classList.add('hidden')
         progressBar.appendChild(el)
-        el.innerHTML = ''
+        el.textContent = ''
     }
     clearStepInfoDisplay()
 }
@@ -175,7 +175,7 @@ function disableInputFields(value) {
 }
 
 function updateScoreDisplay() {
-    document.getElementById('score').innerHTML = score
+    document.getElementById('score').textContent = score
 }
 
 function onStepSelected(e) {
@@ -206,7 +206,10 @@ function showStepInfoText(button) {
     let correctAnswer = `${verb[0]} : ${verb[1]}, ${verb[2]}`
     let isUserCorrect = button.classList.contains('correct')
 
-    stepInfo.innerHTML = getStepInfoHTML(correctAnswer, isUserCorrect)
+    let paragraph = document.createElement('p')
+    paragraph.innerHTML = getStepInfoHTML(correctAnswer, isUserCorrect)
+    stepInfo.appendChild(paragraph)
+
 }
 
 function getStepInfoHTML(correctAnswer, isUserCorrect) {
@@ -218,7 +221,7 @@ function getStepInfoHTML(correctAnswer, isUserCorrect) {
 }
 
 function clearStepInfoDisplay() {
-    stepInfo.innerHTML = ''
+    removeAllChildElements(stepInfo)
     let steps = document.querySelectorAll('.step')
     steps.forEach(function(step) {
         step.classList.remove('selected')
@@ -233,18 +236,22 @@ function getStepIndex(target) {
 
 function gameOver() {
     showGameOverMessage()
-    document.getElementById('present').innerHTML = ''
+    document.getElementById('present').textContent = ''
     setButtonHighlight(true)
     document.activeElement.blur()  // Hide mobile keyboard
     setUIState('start')
 }
 
 function showGameOverMessage() {
-    let msg = '<p>Your score is ' + score
-    msg += ' out of a possible ' + maxQuestions * 2 + '. '
-    msg += getScoreEvaluation(score) + '<br>' 
-    msg += 'Press Start to play again.'
-    document.getElementById('message').innerHTML = msg
+    let p = document.createElement('p')
+    let msg = `Your score is ${score} out of a possible ${maxQuestions*2}. `
+    msg += getScoreEvaluation(score)
+    p.textContent = msg
+    messageBox.appendChild(p) 
+
+    p = document.createElement('p')
+    p.textContent = 'Press Start to play again.'
+    messageBox.appendChild(p) 
 }
 
 function setButtonHighlight(value) {
